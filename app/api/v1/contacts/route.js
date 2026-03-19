@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { logActivity } from '../_lib/activities.js';
-import { unauthorized, badRequest, conflict, errorResponse } from '../_lib/errors.js';
+import { unauthorized, badRequest, conflict, dbError } from '../_lib/errors.js';
 import { isValidEmail, clampString, isValidNumber, isValidEnum, escapeIlike, validateArray, ENUMS } from '../_lib/validate.js';
 
 export async function GET(req) {
@@ -35,7 +35,7 @@ export async function GET(req) {
 
   const { data, error, count } = await query;
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({
     data,
@@ -94,7 +94,7 @@ export async function POST(req) {
 
   if (error) {
     if (error.code === '23505') return conflict('Contact with this email already exists for this tenant');
-    return errorResponse(error.message);
+    return dbError(error);
   }
 
   await logActivity(auth.tenant_id, {

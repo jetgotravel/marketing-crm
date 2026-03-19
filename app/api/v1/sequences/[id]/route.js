@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
-import { unauthorized, notFound, badRequest, errorResponse } from '../../_lib/errors.js';
+import { unauthorized, notFound, badRequest, dbError } from '../../_lib/errors.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -70,7 +70,7 @@ export async function PATCH(req, { params }) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({ data });
 }

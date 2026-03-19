@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
-import { unauthorized, badRequest, errorResponse } from '../_lib/errors.js';
+import { unauthorized, badRequest, dbError } from '../_lib/errors.js';
 import { escapeIlike } from '../_lib/validate.js';
 
 const RESULTS_PER_TYPE = 5;
@@ -43,9 +43,9 @@ export async function GET(req) {
       .limit(RESULTS_PER_TYPE),
   ]);
 
-  if (contacts.error) return errorResponse(contacts.error.message);
-  if (companies.error) return errorResponse(companies.error.message);
-  if (deals.error) return errorResponse(deals.error.message);
+  if (contacts.error) return dbError(contacts.error);
+  if (companies.error) return dbError(companies.error);
+  if (deals.error) return dbError(deals.error);
 
   return NextResponse.json({
     data: {

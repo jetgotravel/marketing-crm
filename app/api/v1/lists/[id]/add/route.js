@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
 import { logActivity } from '../../../_lib/activities.js';
-import { unauthorized, badRequest, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, badRequest, notFound, dbError } from '../../../_lib/errors.js';
 
 export async function POST(req, { params }) {
   const auth = await authenticate(req);
@@ -48,7 +48,7 @@ export async function POST(req, { params }) {
     .from('list_contacts')
     .upsert(rows, { onConflict: 'list_id,contact_id', ignoreDuplicates: true });
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   // Log activity for each added contact
   for (const cid of rows.map(r => r.contact_id)) {

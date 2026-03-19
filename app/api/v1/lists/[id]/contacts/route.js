@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
 import { evaluateFilterRules } from '../../../_lib/filter-engine.js';
-import { unauthorized, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, notFound, dbError } from '../../../_lib/errors.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -25,7 +25,7 @@ export async function GET(req, { params }) {
 
   if (list.list_type === 'dynamic') {
     const result = await evaluateFilterRules(auth.tenant_id, list.filter_rules, { page, limit });
-    if (result.error) return errorResponse(result.error.message);
+    if (result.error) return dbError(result.error);
 
     return NextResponse.json({
       data: result.data,
@@ -46,7 +46,7 @@ export async function GET(req, { params }) {
     .order('added_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   const contacts = data.map(row => ({
     ...row.contacts,

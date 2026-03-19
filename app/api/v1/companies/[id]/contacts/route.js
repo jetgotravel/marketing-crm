@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
-import { unauthorized, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, notFound, dbError } from '../../../_lib/errors.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -30,14 +30,14 @@ export async function GET(req, { params }) {
     .select('contact_id')
     .eq('company_id', id);
 
-  if (linkError) return errorResponse(linkError.message);
+  if (linkError) return dbError(linkError);
 
   const contactIds = links.map((l) => l.contact_id);
 
   if (contactIds.length === 0) {
     return NextResponse.json({
       data: [],
-      pagination: { page, limit, total: 0, pages: 0 },
+      pagination: { page, limit, total: 0, total_pages: 0 },
     });
   }
 
@@ -49,7 +49,7 @@ export async function GET(req, { params }) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({
     data,
@@ -57,7 +57,7 @@ export async function GET(req, { params }) {
       page,
       limit,
       total: count,
-      pages: Math.ceil(count / limit),
+      total_pages: Math.ceil(count / limit),
     },
   });
 }

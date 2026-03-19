@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
 import { renderTemplate } from '../../../_lib/template-render.js';
-import { unauthorized, badRequest, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, badRequest, notFound } from '../../../_lib/errors.js';
 
 export async function POST(req, { params }) {
   const auth = await authenticate(req);

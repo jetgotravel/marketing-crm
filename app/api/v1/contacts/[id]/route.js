@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { logActivity } from '../../_lib/activities.js';
-import { unauthorized, badRequest, notFound, errorResponse } from '../../_lib/errors.js';
+import { unauthorized, badRequest, notFound, dbError } from '../../_lib/errors.js';
 import { isValidEmail, isValidUUID, clampString, isValidNumber, isValidEnum, validateArray, ENUMS } from '../../_lib/validate.js';
 
 export async function GET(req, { params }) {
@@ -90,7 +90,7 @@ export async function PATCH(req, { params }) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   // Log status change if status was updated
   if (updates.status && updates.status !== existing.status) {

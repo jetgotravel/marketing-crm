@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { logActivity } from '../../_lib/activities.js';
-import { unauthorized, badRequest, errorResponse } from '../../_lib/errors.js';
+import { unauthorized, badRequest, dbError } from '../../_lib/errors.js';
 import { isValidEmail, clampString, isValidNumber, validateArray } from '../../_lib/validate.js';
 
 export async function POST(req) {
@@ -49,7 +49,7 @@ export async function POST(req) {
     .upsert(rows, { onConflict: 'tenant_id,email', ignoreDuplicates: true })
     .select();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   const created = data.length;
   const skipped = rows.length - created;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
-import { unauthorized, notFound, badRequest, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, notFound, badRequest, dbError } from '../../../_lib/errors.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -26,7 +26,7 @@ export async function GET(req, { params }) {
     .order('step_order', { ascending: true })
     .order('variant_key', { ascending: true });
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({ data });
 }
@@ -87,7 +87,7 @@ export async function POST(req, { params }) {
       .select()
       .order('step_order', { ascending: true });
 
-    if (error) return errorResponse(error.message);
+    if (error) return dbError(error);
 
     return NextResponse.json({ data }, { status: 201 });
   }
@@ -109,7 +109,7 @@ export async function POST(req, { params }) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({ data }, { status: 201 });
 }

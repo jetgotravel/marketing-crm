@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { logActivity } from '../_lib/activities.js';
-import { unauthorized, badRequest, errorResponse } from '../_lib/errors.js';
+import { unauthorized, badRequest, conflict, dbError } from '../_lib/errors.js';
 
 export async function GET(req) {
   const auth = await authenticate(req);
@@ -27,7 +27,7 @@ export async function GET(req) {
 
   const { data, error, count } = await query;
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({
     data,
@@ -35,7 +35,7 @@ export async function GET(req) {
       page,
       limit,
       total: count,
-      pages: Math.ceil(count / limit),
+      total_pages: Math.ceil(count / limit),
     },
   });
 }
@@ -72,8 +72,8 @@ export async function POST(req) {
     .single();
 
   if (error) {
-    if (error.code === '23505') return errorResponse('Company with this domain already exists for this tenant', 409);
-    return errorResponse(error.message);
+    if (error.code === '23505') return conflict('Company with this domain already exists for this tenant');
+    return dbError(error);
   }
 
   await logActivity(auth.tenant_id, {

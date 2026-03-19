@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
 import { logActivity } from '../../../_lib/activities.js';
-import { unauthorized, badRequest, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, badRequest, notFound, dbError } from '../../../_lib/errors.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -27,7 +27,7 @@ export async function GET(req, { params }) {
     .eq('tenant_id', auth.tenant_id)
     .order('created_at', { ascending: false });
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({ data });
 }
@@ -69,7 +69,7 @@ export async function POST(req, { params }) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   await logActivity(auth.tenant_id, {
     contactId: id,

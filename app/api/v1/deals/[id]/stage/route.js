@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../../_lib/auth.js';
 import supabase from '../../../_lib/db.js';
 import { logActivity } from '../../../_lib/activities.js';
-import { unauthorized, badRequest, notFound, errorResponse } from '../../../_lib/errors.js';
+import { unauthorized, badRequest, notFound, dbError } from '../../../_lib/errors.js';
 
 const VALID_STAGES = ['lead', 'qualified', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
 
@@ -48,7 +48,7 @@ export async function PATCH(req, { params }) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   await logActivity(auth.tenant_id, {
     contactId: data.contact_id,

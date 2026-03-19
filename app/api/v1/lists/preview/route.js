@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import { evaluateFilterRules } from '../../_lib/filter-engine.js';
-import { unauthorized, badRequest, errorResponse } from '../../_lib/errors.js';
+import { unauthorized, badRequest, dbError } from '../../_lib/errors.js';
 
 export async function POST(req) {
   const auth = await authenticate(req);
@@ -24,7 +24,7 @@ export async function POST(req) {
 
   const result = await evaluateFilterRules(auth.tenant_id, body.filter_rules, { page, limit });
 
-  if (result.error) return errorResponse(result.error.message);
+  if (result.error) return dbError(result.error);
 
   return NextResponse.json({
     data: result.data,

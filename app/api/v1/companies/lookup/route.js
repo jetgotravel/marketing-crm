@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { logActivity } from '../../_lib/activities.js';
-import { unauthorized, badRequest, errorResponse } from '../../_lib/errors.js';
+import { unauthorized, badRequest, dbError } from '../../_lib/errors.js';
 
 export async function POST(req) {
   const auth = await authenticate(req);
@@ -50,7 +50,7 @@ export async function POST(req) {
       .select()
       .single();
 
-    if (error) return errorResponse(error.message);
+    if (error) return dbError(error);
 
     company = newCompany;
     created = true;

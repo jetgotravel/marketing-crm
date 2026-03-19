@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
-import { unauthorized, badRequest, errorResponse } from '../_lib/errors.js';
+import { unauthorized, badRequest, dbError } from '../_lib/errors.js';
 
 export async function GET(req) {
   const auth = await authenticate(req);
@@ -19,7 +19,7 @@ export async function GET(req) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({
     data,
@@ -63,7 +63,7 @@ export async function POST(req) {
     .select()
     .single();
 
-  if (error) return errorResponse(error.message);
+  if (error) return dbError(error);
 
   return NextResponse.json({ data }, { status: 201 });
 }
