@@ -16,7 +16,7 @@ export function middleware(request) {
 
   const session = request.cookies.get("crm_dash_session");
 
-  if (!session) {
+  if (!session || session.value !== "authenticated") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
