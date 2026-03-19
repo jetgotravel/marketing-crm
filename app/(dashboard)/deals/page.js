@@ -27,7 +27,6 @@ export default function DealsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeId, setActiveId] = useState(null);
-  const [updating, setUpdating] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -88,7 +87,6 @@ export default function DealsPage() {
     setDeals((prev) =>
       prev.map((d) => (d.id === dealId ? { ...d, stage: targetStage } : d))
     );
-    setUpdating(dealId);
 
     try {
       await apiPatch(`/deals/${dealId}/stage`, { stage: targetStage });
@@ -99,44 +97,32 @@ export default function DealsPage() {
           d.id === dealId ? { ...d, stage: currentStage } : d
         )
       );
-    } finally {
-      setUpdating(null);
-    }
-  }
-
-  // Fallback: move deal via dropdown
-  async function handleMoveStage(dealId, newStage) {
-    const currentStage = findStageForDeal(dealId);
-    if (newStage === currentStage) return;
-
-    setDeals((prev) =>
-      prev.map((d) => (d.id === dealId ? { ...d, stage: newStage } : d))
-    );
-    setUpdating(dealId);
-
-    try {
-      await apiPatch(`/deals/${dealId}/stage`, { stage: newStage });
-    } catch {
-      setDeals((prev) =>
-        prev.map((d) =>
-          d.id === dealId ? { ...d, stage: currentStage } : d
-        )
-      );
-    } finally {
-      setUpdating(null);
     }
   }
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Deals</h1>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Deals</h1>
+          <div className="h-4 w-40 bg-slate-200 rounded animate-pulse mt-2" />
+        </div>
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4">
           {STAGES.map((s) => (
-            <div
-              key={s}
-              className="w-72 shrink-0 h-64 bg-slate-100 rounded-lg animate-pulse"
-            />
+            <div key={s} className="w-64 sm:w-72 shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-5 w-16 bg-slate-200 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-slate-200 rounded animate-pulse" />
+              </div>
+              <div className="bg-slate-100 rounded-lg p-2 space-y-2 min-h-[200px]">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg shadow-sm p-3 space-y-2">
+                    <div className="h-4 w-3/4 bg-slate-200 rounded animate-pulse" />
+                    <div className="h-3 w-1/2 bg-slate-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -147,7 +133,15 @@ export default function DealsPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-semibold text-slate-900">Deals</h1>
-        <p className="text-sm text-red-600">{error}</p>
+        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+          <p className="text-sm text-red-600">{error}</p>
+          <button
+            onClick={fetchDeals}
+            className="mt-3 px-4 py-1.5 text-sm rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -173,7 +167,7 @@ export default function DealsPage() {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory md:snap-none md:mx-0 md:px-0">
           {STAGES.map((stage) => (
             <KanbanColumn
               key={stage}

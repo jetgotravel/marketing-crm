@@ -161,8 +161,14 @@ export default function ContactsPage() {
       {loading ? (
         <Loading />
       ) : error ? (
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 text-center">
           <p className="text-sm text-red-600">{error}</p>
+          <button
+            onClick={fetchContacts}
+            className="mt-3 px-4 py-1.5 text-sm rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : contacts.length === 0 ? (
         <EmptyState

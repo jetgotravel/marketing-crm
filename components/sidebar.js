@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -13,14 +14,20 @@ const NAV_ITEMS = [
   { href: "/activity", label: "Activity", icon: ClockIcon },
 ];
 
+const MOBILE_TABS = NAV_ITEMS.slice(0, 4);
+const MORE_ITEMS = NAV_ITEMS.slice(4);
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   function isActive(href) {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   }
+
+  const moreActive = MORE_ITEMS.some((item) => isActive(item.href));
 
   async function handleLogout() {
     await fetch("/api/dashboard/auth/logout", { method: "POST" });
@@ -68,11 +75,32 @@ export default function Sidebar() {
 
       {/* Mobile bottom tab bar */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-800 z-50">
+        {/* More menu popover */}
+        {moreOpen && (
+          <div className="absolute bottom-full left-0 right-0 bg-slate-900 border-t border-slate-800 px-4 py-2 space-y-1">
+            {MORE_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMoreOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm ${
+                  isActive(item.href)
+                    ? "bg-slate-800 text-white"
+                    : "text-slate-400"
+                }`}
+              >
+                <item.icon />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
         <div className="flex justify-around py-2">
-          {NAV_ITEMS.slice(0, 5).map((item) => (
+          {MOBILE_TABS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMoreOpen(false)}
               className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs ${
                 isActive(item.href) ? "text-white" : "text-slate-500"
               }`}
@@ -81,6 +109,15 @@ export default function Sidebar() {
               {item.label}
             </Link>
           ))}
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs ${
+              moreActive || moreOpen ? "text-white" : "text-slate-500"
+            }`}
+          >
+            <MoreIcon />
+            More
+          </button>
         </div>
       </nav>
     </>
@@ -139,6 +176,14 @@ function ClockIcon() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
     </svg>
   );
 }

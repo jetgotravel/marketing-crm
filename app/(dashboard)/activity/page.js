@@ -59,7 +59,7 @@ export default function ActivityPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 flex flex-wrap gap-3 items-end">
+      <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end">
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">
             Type
@@ -70,7 +70,7 @@ export default function ActivityPage() {
               setTypeFilter(e.target.value);
               handleFilterChange();
             }}
-            className="block w-48 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full sm:w-48 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All types</option>
             {ACTIVITY_TYPES.map((t) => (
@@ -128,7 +128,15 @@ export default function ActivityPage() {
         {loading ? (
           <Loading />
         ) : error ? (
-          <p className="text-sm text-red-600 p-6">{error}</p>
+          <div className="p-6 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+            <button
+              onClick={fetchActivities}
+              className="mt-3 px-4 py-1.5 text-sm rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         ) : activities.length === 0 ? (
           <EmptyState
             title="No activities found"

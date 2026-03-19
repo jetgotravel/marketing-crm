@@ -83,8 +83,14 @@ export default function ListDetailPage() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
         <p className="text-sm text-red-600">{error}</p>
+        <button
+          onClick={fetchData}
+          className="mt-3 px-4 py-1.5 text-sm rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -118,7 +124,7 @@ export default function ListDetailPage() {
           </svg>
           Back to Lists
         </button>
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">
               {list.name}

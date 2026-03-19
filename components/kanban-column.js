@@ -13,7 +13,7 @@ export default function KanbanColumn({ stage, deals }) {
   const totalValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
 
   return (
-    <div className="flex flex-col w-72 shrink-0">
+    <div className="flex flex-col w-64 sm:w-72 shrink-0 snap-start">
       <div className="flex items-center gap-2 mb-3">
         <StatusBadge value={stage} type="deal" />
         <span className="text-xs text-slate-400">{deals.length}</span>
