@@ -1,12 +1,13 @@
 import supabase from './db.js';
+import { escapeIlike } from './validate.js';
 
 const OPERATORS = {
   equals: (query, field, value) => query.eq(field, value),
   not_equals: (query, field, value) => query.neq(field, value),
-  contains: (query, field, value) => query.ilike(field, `%${value}%`),
-  not_contains: (query, field, value) => query.not(field, 'ilike', `%${value}%`),
-  starts_with: (query, field, value) => query.ilike(field, `${value}%`),
-  ends_with: (query, field, value) => query.ilike(field, `%${value}`),
+  contains: (query, field, value) => query.ilike(field, `%${escapeIlike(String(value))}%`),
+  not_contains: (query, field, value) => query.not(field, 'ilike', `%${escapeIlike(String(value))}%`),
+  starts_with: (query, field, value) => query.ilike(field, `${escapeIlike(String(value))}%`),
+  ends_with: (query, field, value) => query.ilike(field, `%${escapeIlike(String(value))}`),
   gt: (query, field, value) => query.gt(field, value),
   lt: (query, field, value) => query.lt(field, value),
   is_empty: (query, field) => query.is(field, null),
@@ -61,7 +62,7 @@ export async function evaluateFilterRules(tenantId, filterRules, { page = 1, lim
       } else if (operator === 'not_equals') {
         query = query.neq(`custom_fields->>${path}`, value);
       } else if (operator === 'contains') {
-        query = query.ilike(`custom_fields->>${path}`, `%${value}%`);
+        query = query.ilike(`custom_fields->>${path}`, `%${escapeIlike(String(value))}%`);
       } else if (operator === 'is_empty') {
         query = query.is(`custom_fields->>${path}`, null);
       } else if (operator === 'is_not_empty') {
