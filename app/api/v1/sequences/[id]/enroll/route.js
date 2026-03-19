@@ -48,7 +48,16 @@ export async function POST(req, { params }) {
   let contactIds = [];
 
   if (body.list_id) {
-    // Enroll all contacts from a static list
+    // Verify list belongs to this tenant before reading contacts
+    const { data: list } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('id', body.list_id)
+      .eq('tenant_id', auth.tenant_id)
+      .single();
+
+    if (!list) return badRequest('List not found or does not belong to this tenant');
+
     const { data: listContacts } = await supabase
       .from('list_contacts')
       .select('contact_id')

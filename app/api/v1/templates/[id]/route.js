@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { unauthorized, badRequest, notFound } from '../../_lib/errors.js';
+import { clampString, isValidEnum, ENUMS } from '../../_lib/validate.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -36,10 +37,17 @@ export async function PATCH(req, { params }) {
 
   const allowedFields = ['name', 'subject_template', 'body_template', 'category'];
 
+  if (body.category && !isValidEnum(body.category, ENUMS.TEMPLATE_CATEGORIES)) {
+    return badRequest(`Invalid category. Must be one of: ${ENUMS.TEMPLATE_CATEGORIES.join(', ')}`);
+  }
+
   const updates = {};
   for (const field of allowedFields) {
     if (body[field] !== undefined) updates[field] = body[field];
   }
+  if (updates.name) updates.name = clampString(updates.name, 255);
+  if (updates.subject_template) updates.subject_template = clampString(updates.subject_template, 500);
+  if (updates.body_template) updates.body_template = clampString(updates.body_template, 50000);
 
   if (Object.keys(updates).length === 0) return badRequest('No valid fields to update');
 

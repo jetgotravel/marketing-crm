@@ -3,6 +3,7 @@ import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { logActivity } from '../_lib/activities.js';
 import { unauthorized, badRequest, conflict, dbError } from '../_lib/errors.js';
+import { escapeIlike, clampString, validateArray } from '../_lib/validate.js';
 
 export async function GET(req) {
   const auth = await authenticate(req);
@@ -22,7 +23,8 @@ export async function GET(req) {
     .range(offset, offset + limit - 1);
 
   if (q) {
-    query = query.or(`name.ilike.%${q}%,domain.ilike.%${q}%`);
+    const sq = escapeIlike(q);
+    query = query.or(`name.ilike.%${sq}%,domain.ilike.%${sq}%`);
   }
 
   const { data, error, count } = await query;
@@ -53,19 +55,22 @@ export async function POST(req) {
 
   if (!body.name) return badRequest('name is required');
 
+  const tags = body.tags ? validateArray(body.tags, 50) : [];
+  if (body.tags && tags === null) return badRequest('tags must be an array (max 50)');
+
   const { data, error } = await supabase
     .from('companies')
     .insert({
       tenant_id: auth.tenant_id,
-      name: body.name,
-      domain: body.domain || null,
-      industry: body.industry || null,
-      size_range: body.size_range || null,
-      location: body.location || null,
-      website: body.website || null,
-      description: body.description || null,
-      linkedin_url: body.linkedin_url || null,
-      tags: body.tags || [],
+      name: clampString(body.name, 255),
+      domain: clampString(body.domain, 255) || null,
+      industry: clampString(body.industry, 100) || null,
+      size_range: clampString(body.size_range, 50) || null,
+      location: clampString(body.location, 255) || null,
+      website: clampString(body.website, 500) || null,
+      description: clampString(body.description, 5000) || null,
+      linkedin_url: clampString(body.linkedin_url, 500) || null,
+      tags,
       custom_fields: body.custom_fields || {},
     })
     .select()
