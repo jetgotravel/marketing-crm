@@ -3,6 +3,7 @@ import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { logActivity } from '../../_lib/activities.js';
 import { unauthorized, badRequest, errorResponse } from '../../_lib/errors.js';
+import { isValidEmail, clampString, isValidNumber, validateArray } from '../../_lib/validate.js';
 
 export async function POST(req) {
   const auth = await authenticate(req);
@@ -25,20 +26,20 @@ export async function POST(req) {
   }
 
   const rows = contacts
-    .filter((c) => c.email)
+    .filter((c) => c.email && isValidEmail(c.email))
     .map((c) => ({
       tenant_id: auth.tenant_id,
       email: c.email.toLowerCase().trim(),
-      first_name: c.first_name || null,
-      last_name: c.last_name || null,
-      company: c.company || null,
-      title: c.title || null,
-      phone: c.phone || null,
-      linkedin_url: c.linkedin_url || null,
+      first_name: clampString(c.first_name, 255) || null,
+      last_name: clampString(c.last_name, 255) || null,
+      company: clampString(c.company, 255) || null,
+      title: clampString(c.title, 255) || null,
+      phone: clampString(c.phone, 50) || null,
+      linkedin_url: clampString(c.linkedin_url, 500) || null,
       source: c.source || 'imported',
-      tags: c.tags || [],
+      tags: validateArray(c.tags, 100) || [],
       custom_fields: c.custom_fields || {},
-      score: c.score || 0,
+      score: isValidNumber(c.score) ? Math.max(0, Math.min(1000, c.score)) : 0,
     }));
 
   if (rows.length === 0) return badRequest('No valid contacts (email required)');

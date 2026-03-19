@@ -3,6 +3,7 @@ import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { logActivity } from '../_lib/activities.js';
 import { unauthorized, badRequest, errorResponse } from '../_lib/errors.js';
+import { clampString, isValidNumber, isValidEnum, isValidDate, ENUMS } from '../_lib/validate.js';
 
 export async function GET(req) {
   const auth = await authenticate(req);
@@ -54,6 +55,15 @@ export async function POST(req) {
   }
 
   if (!body.deal_name) return badRequest('deal_name is required');
+  if (body.value !== undefined && (!isValidNumber(body.value) || body.value < 0)) {
+    return badRequest('value must be a non-negative number');
+  }
+  if (body.stage && !isValidEnum(body.stage, ENUMS.DEAL_STAGES)) {
+    return badRequest(`Invalid stage. Must be one of: ${ENUMS.DEAL_STAGES.join(', ')}`);
+  }
+  if (body.expected_close_date && !isValidDate(body.expected_close_date)) {
+    return badRequest('Invalid expected_close_date format');
+  }
 
   const { data, error } = await supabase
     .from('deals')
@@ -61,11 +71,11 @@ export async function POST(req) {
       tenant_id: auth.tenant_id,
       contact_id: body.contact_id || null,
       company_id: body.company_id || null,
-      deal_name: body.deal_name,
+      deal_name: clampString(body.deal_name, 255),
       value: body.value || 0,
       stage: body.stage || 'lead',
       expected_close_date: body.expected_close_date || null,
-      notes: body.notes || null,
+      notes: clampString(body.notes, 5000) || null,
     })
     .select()
     .single();

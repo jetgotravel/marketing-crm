@@ -3,6 +3,7 @@ import { authenticate } from '../../_lib/auth.js';
 import supabase from '../../_lib/db.js';
 import { logActivity } from '../../_lib/activities.js';
 import { unauthorized, badRequest, notFound, errorResponse } from '../../_lib/errors.js';
+import { isValidEmail, isValidUUID, clampString, isValidNumber, isValidEnum, validateArray, ENUMS } from '../../_lib/validate.js';
 
 export async function GET(req, { params }) {
   const auth = await authenticate(req);
@@ -51,10 +52,31 @@ export async function PATCH(req, { params }) {
     'custom_fields', 'score',
   ];
 
+  // Validate specific fields
+  if (body.email !== undefined && !isValidEmail(body.email)) return badRequest('Invalid email format');
+  if (body.source !== undefined && !isValidEnum(body.source, ENUMS.CONTACT_SOURCES)) {
+    return badRequest(`Invalid source. Must be one of: ${ENUMS.CONTACT_SOURCES.join(', ')}`);
+  }
+  if (body.status !== undefined && !isValidEnum(body.status, ENUMS.CONTACT_STATUSES)) {
+    return badRequest(`Invalid status. Must be one of: ${ENUMS.CONTACT_STATUSES.join(', ')}`);
+  }
+  if (body.score !== undefined && (!isValidNumber(body.score) || body.score < 0 || body.score > 1000)) {
+    return badRequest('score must be a number between 0 and 1000');
+  }
+  if (body.tags !== undefined) {
+    const validTags = validateArray(body.tags, 100);
+    if (!validTags) return badRequest('tags must be an array');
+    body.tags = validTags;
+  }
+
+  const stringLimits = { first_name: 255, last_name: 255, company: 255, title: 255, phone: 50, linkedin_url: 500 };
   const updates = {};
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
-      updates[field] = field === 'email' ? body[field].toLowerCase().trim() : body[field];
+      let val = body[field];
+      if (field === 'email') val = val.toLowerCase().trim();
+      else if (stringLimits[field]) val = clampString(val, stringLimits[field]);
+      updates[field] = val;
     }
   }
 

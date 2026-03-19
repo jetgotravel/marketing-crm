@@ -27,7 +27,7 @@ export async function POST(req, { params }) {
     return badRequest('Invalid JSON body');
   }
 
-  const contactIds = Array.isArray(body.contact_ids) ? body.contact_ids : body.contact_id ? [body.contact_id] : [];
+  const contactIds = Array.isArray(body.contact_ids) ? body.contact_ids.slice(0, 500) : body.contact_id ? [body.contact_id] : [];
   if (contactIds.length === 0) return badRequest('contact_id or contact_ids is required');
 
   // Verify contacts belong to this tenant

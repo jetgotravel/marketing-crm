@@ -59,6 +59,8 @@ export async function POST(req, { params }) {
     }
     contactIds = listContacts.map(lc => lc.contact_id);
   } else if (body.contact_ids) {
+    if (!Array.isArray(body.contact_ids)) return badRequest('contact_ids must be an array');
+    if (body.contact_ids.length > 500) return badRequest('Maximum 500 contacts per enrollment');
     contactIds = body.contact_ids;
   } else if (body.contact_id) {
     contactIds = [body.contact_id];

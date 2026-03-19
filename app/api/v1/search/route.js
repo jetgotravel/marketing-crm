@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { unauthorized, badRequest, errorResponse } from '../_lib/errors.js';
+import { escapeIlike } from '../_lib/validate.js';
 
 const RESULTS_PER_TYPE = 5;
 
@@ -14,7 +15,7 @@ export async function GET(req) {
 
   if (!q || q.trim().length === 0) return badRequest('q (search query) is required');
 
-  const term = `%${q.trim()}%`;
+  const term = `%${escapeIlike(q.trim())}%`;
 
   const [contacts, companies, deals] = await Promise.all([
     supabase

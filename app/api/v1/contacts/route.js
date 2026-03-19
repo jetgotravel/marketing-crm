@@ -3,6 +3,7 @@ import { authenticate } from '../_lib/auth.js';
 import supabase from '../_lib/db.js';
 import { logActivity } from '../_lib/activities.js';
 import { unauthorized, badRequest, conflict, errorResponse } from '../_lib/errors.js';
+import { isValidEmail, clampString, isValidNumber, isValidEnum, escapeIlike, validateArray, ENUMS } from '../_lib/validate.js';
 
 export async function GET(req) {
   const auth = await authenticate(req);
@@ -27,7 +28,10 @@ export async function GET(req) {
   if (status) query = query.eq('status', status);
   if (source) query = query.eq('source', source);
   if (tags) query = query.overlaps('tags', tags.split(','));
-  if (q) query = query.or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%`);
+  if (q) {
+    const sq = escapeIlike(q);
+    query = query.or(`email.ilike.%${sq}%,first_name.ilike.%${sq}%,last_name.ilike.%${sq}%,company.ilike.%${sq}%`);
+  }
 
   const { data, error, count } = await query;
 
@@ -56,18 +60,30 @@ export async function POST(req) {
   }
 
   if (!body.email) return badRequest('email is required');
+  if (!isValidEmail(body.email)) return badRequest('Invalid email format');
+  if (body.source && !isValidEnum(body.source, ENUMS.CONTACT_SOURCES)) {
+    return badRequest(`Invalid source. Must be one of: ${ENUMS.CONTACT_SOURCES.join(', ')}`);
+  }
+  if (body.score !== undefined && (!isValidNumber(body.score) || body.score < 0 || body.score > 1000)) {
+    return badRequest('score must be a number between 0 and 1000');
+  }
+  if (body.tags) {
+    const validTags = validateArray(body.tags, 100);
+    if (!validTags) return badRequest('tags must be an array');
+    body.tags = validTags;
+  }
 
   const { data, error } = await supabase
     .from('contacts')
     .insert({
       tenant_id: auth.tenant_id,
       email: body.email.toLowerCase().trim(),
-      first_name: body.first_name || null,
-      last_name: body.last_name || null,
-      company: body.company || null,
-      title: body.title || null,
-      phone: body.phone || null,
-      linkedin_url: body.linkedin_url || null,
+      first_name: clampString(body.first_name, 255) || null,
+      last_name: clampString(body.last_name, 255) || null,
+      company: clampString(body.company, 255) || null,
+      title: clampString(body.title, 255) || null,
+      phone: clampString(body.phone, 50) || null,
+      linkedin_url: clampString(body.linkedin_url, 500) || null,
       source: body.source || 'manual',
       tags: body.tags || [],
       custom_fields: body.custom_fields || {},
