@@ -20,7 +20,7 @@ export async function POST(req, { params }) {
   // Verify sequence ownership and status
   const { data: sequence } = await supabase
     .from('sequences')
-    .select('id, status')
+    .select('id, status, cooldown_days')
     .eq('id', id)
     .eq('tenant_id', auth.tenant_id)
     .single();
@@ -77,16 +77,56 @@ export async function POST(req, { params }) {
     return badRequest('Provide contact_id, contact_ids, or list_id');
   }
 
-  // Calculate next_step_at
-  const nextStepAt = new Date(Date.now() + firstDelay * 24 * 60 * 60 * 1000).toISOString();
+  // Validate sender_user_id if provided
+  const senderUserId = body.sender_user_id || null;
+  if (senderUserId) {
+    const { data: sender } = await supabase
+      .from('users')
+      .select('id, gmail_connected')
+      .eq('id', senderUserId)
+      .eq('tenant_id', auth.tenant_id)
+      .single();
+    if (!sender) return badRequest('sender_user_id not found for this tenant');
+  }
+
+  // Cooldown check: skip contacts enrolled in this sequence recently
+  let filteredContactIds = contactIds;
+  const cooldownDays = sequence.cooldown_days || 0;
+  if (cooldownDays > 0) {
+    const cooldownDate = new Date(Date.now() - cooldownDays * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentEnrollments } = await supabase
+      .from('sequence_enrollments')
+      .select('contact_id')
+      .eq('sequence_id', id)
+      .gte('enrolled_at', cooldownDate);
+    if (recentEnrollments && recentEnrollments.length > 0) {
+      const recentIds = new Set(recentEnrollments.map(e => e.contact_id));
+      filteredContactIds = contactIds.filter(cid => !recentIds.has(cid));
+    }
+  }
+
+  if (filteredContactIds.length === 0) {
+    return badRequest('All contacts are within the cooldown period for this sequence');
+  }
+
+  // All enrollments start as pending_review — activation requires dashboard confirmation
+  const skipReview = body.skip_review === true && body._dashboard_confirmed === true;
+  const initialStatus = skipReview ? 'active' : 'pending_review';
+
+  // Enforce minimum 1-day delay on first step for safety
+  const effectiveDelay = Math.max(firstDelay, 1);
+  const nextStepAt = skipReview
+    ? new Date(Date.now() + effectiveDelay * 24 * 60 * 60 * 1000).toISOString()
+    : null; // pending_review enrollments don't have a next_step_at until activated
 
   // Build enrollment rows
-  const rows = contactIds.map(contactId => ({
+  const rows = filteredContactIds.map(contactId => ({
     sequence_id: id,
     contact_id: contactId,
     current_step_order: firstStepOrder,
-    status: 'active',
+    status: initialStatus,
     next_step_at: nextStepAt,
+    sender_user_id: senderUserId,
   }));
 
   // Upsert to avoid duplicate enrollment errors
@@ -111,6 +151,10 @@ export async function POST(req, { params }) {
     data: {
       enrolled: data.length,
       sequence_id: id,
+      status: initialStatus,
+      message: initialStatus === 'pending_review'
+        ? 'Contacts enrolled as pending_review. Call activate_enrollments to start sending.'
+        : 'Contacts enrolled and active. First email will send after minimum 24hr delay.',
       enrollments: data,
     },
   }, { status: 201 });

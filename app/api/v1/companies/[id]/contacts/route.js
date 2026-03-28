@@ -24,7 +24,7 @@ export async function GET(req, { params }) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
   const offset = (page - 1) * limit;
 
-  // Get contact IDs from join table, then fetch contacts
+  // Get contacts via both direct FK and join table
   const { data: links, error: linkError } = await supabase
     .from('contact_companies')
     .select('contact_id')
@@ -32,22 +32,23 @@ export async function GET(req, { params }) {
 
   if (linkError) return dbError(linkError);
 
-  const contactIds = links.map((l) => l.contact_id);
+  const joinIds = links.map((l) => l.contact_id);
 
-  if (contactIds.length === 0) {
-    return NextResponse.json({
-      data: [],
-      pagination: { page, limit, total: 0, total_pages: 0 },
-    });
-  }
-
-  const { data, error, count } = await supabase
+  // Query contacts linked via company_id FK OR join table
+  let query = supabase
     .from('contacts')
     .select('*', { count: 'exact' })
     .eq('tenant_id', auth.tenant_id)
-    .in('id', contactIds)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (joinIds.length > 0) {
+    query = query.or(`company_id.eq.${id},id.in.(${joinIds.join(',')})`);
+  } else {
+    query = query.eq('company_id', id);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) return dbError(error);
 

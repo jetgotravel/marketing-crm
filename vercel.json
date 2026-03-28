@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/v1/send-queue/process",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/v1/gmail-sync/process",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}

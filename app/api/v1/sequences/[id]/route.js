@@ -55,8 +55,17 @@ export async function PATCH(req, { params }) {
     if (!['draft', 'active', 'paused', 'completed'].includes(body.status)) {
       return badRequest('Invalid status');
     }
+    // Activating a sequence requires dashboard confirmation — block from API
+    if (body.status === 'active' && existing.status !== 'active' && !body._dashboard_confirmed) {
+      return badRequest('Sequences can only be activated from the CRM dashboard. This protects against accidental sends.');
+    }
     updates.status = body.status;
   }
+  if (body.send_window_start !== undefined) updates.send_window_start = body.send_window_start;
+  if (body.send_window_end !== undefined) updates.send_window_end = body.send_window_end;
+  if (body.skip_weekends !== undefined) updates.skip_weekends = body.skip_weekends;
+  if (body.daily_send_limit !== undefined) updates.daily_send_limit = body.daily_send_limit;
+  if (body.cooldown_days !== undefined) updates.cooldown_days = body.cooldown_days;
 
   if (Object.keys(updates).length === 0) return badRequest('No valid fields to update');
 

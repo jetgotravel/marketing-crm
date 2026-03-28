@@ -38,6 +38,7 @@ export async function POST(req) {
         tenant_id: auth.tenant_id,
         name: body.name || domain,
         domain,
+        primary_email: body.primary_email ? body.primary_email.toLowerCase().trim() : null,
         industry: body.industry || null,
         size_range: body.size_range || null,
         location: body.location || null,
@@ -73,6 +74,14 @@ export async function POST(req) {
       .single();
 
     if (contact) {
+      // Set company_id FK on contact
+      await supabase
+        .from('contacts')
+        .update({ company_id: company.id })
+        .eq('id', body.contact_id)
+        .eq('tenant_id', auth.tenant_id);
+
+      // Also maintain join table
       const { error: linkError } = await supabase
         .from('contact_companies')
         .upsert(
@@ -84,5 +93,15 @@ export async function POST(req) {
     }
   }
 
-  return NextResponse.json({ data: company, created }, { status: created ? 201 : 200 });
+  // Fetch linked contacts for the response
+  const { data: linkedContacts } = await supabase
+    .from('contacts')
+    .select('id, email, first_name, last_name, is_placeholder')
+    .eq('tenant_id', auth.tenant_id)
+    .eq('company_id', company.id);
+
+  return NextResponse.json({
+    data: { ...company, contacts: linkedContacts || [] },
+    created,
+  }, { status: created ? 201 : 200 });
 }

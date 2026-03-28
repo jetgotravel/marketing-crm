@@ -1,7 +1,14 @@
-import { proxyGet } from "../../lib/proxy";
+import { createClient } from "@supabase/supabase-js";
+import { verifyDashboardAuth } from "../../lib/auth";
+import { redirect } from "next/navigation";
 import StatCard from "../../components/stat-card";
 import ActivityItem from "../../components/activity-item";
 import { formatCurrency, formatNumber } from "../../lib/format";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const DEAL_STAGES = [
   { key: "lead", label: "Lead", color: "bg-slate-400" },
@@ -12,38 +19,34 @@ const DEAL_STAGES = [
   { key: "closed_lost", label: "Lost", color: "bg-red-500" },
 ];
 
-function makeParams(obj) {
-  const params = new URLSearchParams();
-  for (const [k, v] of Object.entries(obj)) params.set(k, v);
-  return params;
-}
-
 export default async function DashboardPage() {
-  const [contacts, companies, deals, sequences, activities] = await Promise.all(
-    [
-      proxyGet("/contacts", makeParams({ limit: "1" })),
-      proxyGet("/companies", makeParams({ limit: "1" })),
-      proxyGet("/deals", makeParams({ limit: "100" })),
-      proxyGet("/sequences", makeParams({ limit: "1", status: "active" })),
-      proxyGet("/activities", makeParams({ limit: "20" })),
-    ]
-  );
+  const { authorized, tenant_id, user } = await verifyDashboardAuth();
+  if (!authorized) redirect("/login");
 
-  const totalContacts = contacts?.pagination?.total ?? 0;
-  const totalCompanies = companies?.pagination?.total ?? 0;
-  const totalDeals = deals?.pagination?.total ?? 0;
-  const activeSequences = sequences?.pagination?.total ?? 0;
+  const [
+    { count: totalContacts },
+    { count: totalCompanies },
+    { data: deals, count: totalDeals },
+    { count: activeSequences },
+    { data: activities },
+  ] = await Promise.all([
+    supabase.from("contacts").select("id", { count: "exact", head: true }).eq("tenant_id", tenant_id),
+    supabase.from("companies").select("id", { count: "exact", head: true }).eq("tenant_id", tenant_id),
+    supabase.from("deals").select("*", { count: "exact" }).eq("tenant_id", tenant_id).limit(100),
+    supabase.from("sequences").select("id", { count: "exact", head: true }).eq("tenant_id", tenant_id).eq("status", "active"),
+    supabase.from("activities").select("*").eq("tenant_id", tenant_id).order("created_at", { ascending: false }).limit(20),
+  ]);
 
   // Group deals by stage
   const dealsByStage = {};
   for (const stage of DEAL_STAGES) {
     dealsByStage[stage.key] = { count: 0, value: 0 };
   }
-  if (deals?.data) {
-    for (const deal of deals.data) {
+  if (deals) {
+    for (const deal of deals) {
       if (dealsByStage[deal.stage]) {
         dealsByStage[deal.stage].count++;
-        dealsByStage[deal.stage].value += deal.value || 0;
+        dealsByStage[deal.stage].value += parseFloat(deal.value) || 0;
       }
     }
   }
@@ -62,28 +65,21 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">CRM overview</p>
+        <p className="text-sm text-slate-500 mt-1">
+          {user?.name ? `Welcome, ${user.name}` : "CRM overview"}
+        </p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Contacts"
-          value={formatNumber(totalContacts)}
-        />
-        <StatCard
-          label="Companies"
-          value={formatNumber(totalCompanies)}
-        />
+        <StatCard label="Contacts" value={formatNumber(totalContacts ?? 0)} />
+        <StatCard label="Companies" value={formatNumber(totalCompanies ?? 0)} />
         <StatCard
           label="Deals"
-          value={formatNumber(totalDeals)}
+          value={formatNumber(totalDeals ?? 0)}
           sub={`${formatCurrency(totalPipelineValue)} pipeline`}
         />
-        <StatCard
-          label="Active Sequences"
-          value={formatNumber(activeSequences)}
-        />
+        <StatCard label="Active Sequences" value={formatNumber(activeSequences ?? 0)} />
       </div>
 
       {/* Deal pipeline */}
@@ -126,9 +122,9 @@ export default async function DashboardPage() {
         <h2 className="text-sm font-medium text-slate-900 mb-2">
           Recent Activity
         </h2>
-        {activities?.data?.length > 0 ? (
+        {activities?.length > 0 ? (
           <div className="divide-y divide-slate-100">
-            {activities.data.map((a) => (
+            {activities.map((a) => (
               <ActivityItem key={a.id} activity={a} />
             ))}
           </div>

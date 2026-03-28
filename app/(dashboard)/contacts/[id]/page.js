@@ -104,10 +104,10 @@ export default function ContactDetailPage() {
             <p className="text-sm text-slate-500 mt-1">{contact.email}</p>
           </div>
           <div className="flex items-center gap-3">
-            {contact.lead_score != null && (
+            {contact.score != null && (
               <div className="text-center">
                 <p className="text-2xl font-semibold text-slate-900">
-                  {contact.lead_score}
+                  {contact.score}
                 </p>
                 <p className="text-xs text-slate-500">Lead Score</p>
               </div>
@@ -137,8 +137,15 @@ export default function ContactDetailPage() {
             }
             onClick={(href) => router.push(href)}
           />
+          <Field label="Title" value={contact.title} />
           <Field label="Status" value={contact.status} />
           <Field label="Source" value={contact.source} />
+          <Field label="Seniority" value={contact.seniority} />
+          <Field label="Department" value={contact.department} />
+          <Field label="City" value={contact.city} />
+          <Field label="Country" value={contact.country} />
+          <Field label="LinkedIn" value={contact.linkedin_url} />
+          <Field label="Score" value={contact.score} />
           <Field label="Created" value={formatDate(contact.created_at)} />
           <Field
             label="Last Activity"

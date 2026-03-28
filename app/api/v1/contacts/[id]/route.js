@@ -49,7 +49,9 @@ export async function PATCH(req, { params }) {
   const allowedFields = [
     'email', 'first_name', 'last_name', 'company', 'title',
     'phone', 'linkedin_url', 'source', 'status', 'tags',
-    'custom_fields', 'score',
+    'custom_fields', 'score', 'company_id', 'is_placeholder',
+    'seniority', 'department', 'city', 'country', 'photo_url',
+    'employment_history',
   ];
 
   // Validate specific fields

@@ -88,6 +88,14 @@ export async function POST(req) {
       tags: body.tags || [],
       custom_fields: body.custom_fields || {},
       score: body.score || 0,
+      company_id: body.company_id || null,
+      is_placeholder: body.is_placeholder || false,
+      seniority: clampString(body.seniority, 100) || null,
+      department: clampString(body.department, 100) || null,
+      city: clampString(body.city, 255) || null,
+      country: clampString(body.country, 100) || null,
+      photo_url: clampString(body.photo_url, 500) || null,
+      employment_history: body.employment_history || [],
     })
     .select()
     .single();

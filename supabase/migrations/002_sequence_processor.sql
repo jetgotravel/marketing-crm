@@ -111,9 +111,5 @@ begin
 end;
 $$;
 
--- Schedule via pg_cron: every 5 minutes
-select cron.schedule(
-  'process-sequence-steps',
-  '*/5 * * * *',
-  'select process_sequence_steps()'
-);
+-- Note: scheduling is handled by Vercel Cron (vercel.json)
+-- instead of pg_cron, which requires the cron extension.

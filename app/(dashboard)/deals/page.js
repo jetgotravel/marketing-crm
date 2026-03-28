@@ -181,7 +181,7 @@ export default function DealsPage() {
           {activeDeal ? (
             <div className="bg-white rounded-lg shadow-lg p-3 w-72 rotate-2">
               <p className="text-sm font-medium text-slate-900 truncate">
-                {activeDeal.name}
+                {activeDeal.deal_name}
               </p>
               {activeDeal.value != null && (
                 <p className="text-sm text-slate-600 mt-1">

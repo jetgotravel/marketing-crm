@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServer } from "../../../../../lib/supabase-server.js";
 
 export async function POST() {
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set("crm_dash_session", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
-  return response;
+  const supabase = await createSupabaseServer();
+  await supabase.auth.signOut();
+  return NextResponse.json({ ok: true });
 }

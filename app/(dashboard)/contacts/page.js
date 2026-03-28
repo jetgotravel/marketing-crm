@@ -36,8 +36,8 @@ const COLUMNS = [
     key: "lead_score",
     label: "Score",
     render: (row) =>
-      row.lead_score != null ? (
-        <span className="font-medium">{row.lead_score}</span>
+      row.score != null ? (
+        <span className="font-medium">{row.score}</span>
       ) : (
         "—"
       ),
@@ -95,18 +95,18 @@ export default function ContactsPage() {
       if (search.trim()) {
         res = await apiGet("/search", {
           q: search.trim(),
-          types: "contacts",
-          page: String(page),
-          limit: String(PAGE_SIZE),
         });
+        // Search returns { data: { contacts, companies, deals } }
+        setContacts(res.data?.contacts || []);
+        setPagination(null);
       } else {
         res = await apiGet("/contacts", {
           page: String(page),
           limit: String(PAGE_SIZE),
         });
+        setContacts(res.data || []);
+        setPagination(res.pagination || null);
       }
-      setContacts(res.data || []);
-      setPagination(res.pagination || null);
     } catch (e) {
       setError(e.message);
     } finally {

@@ -113,3 +113,85 @@ export async function POST(req, { params }) {
 
   return NextResponse.json({ data }, { status: 201 });
 }
+
+export async function DELETE(req, { params }) {
+  const auth = await authenticate(req);
+  if (auth.error) return unauthorized(auth.error);
+
+  const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const stepId = searchParams.get('step_id');
+
+  if (!stepId) return badRequest('step_id query parameter is required');
+
+  // Verify sequence ownership
+  const { data: sequence } = await supabase
+    .from('sequences')
+    .select('id')
+    .eq('id', id)
+    .eq('tenant_id', auth.tenant_id)
+    .single();
+
+  if (!sequence) return notFound('Sequence');
+
+  const { data, error } = await supabase
+    .from('sequence_steps')
+    .delete()
+    .eq('id', stepId)
+    .eq('sequence_id', id)
+    .select()
+    .single();
+
+  if (error || !data) return notFound('Step');
+
+  return NextResponse.json({ data });
+}
+
+export async function PATCH(req, { params }) {
+  const auth = await authenticate(req);
+  if (auth.error) return unauthorized(auth.error);
+
+  const { id } = await params;
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return badRequest('Invalid JSON body');
+  }
+
+  if (!body.step_id) return badRequest('step_id is required');
+
+  // Verify sequence ownership
+  const { data: sequence } = await supabase
+    .from('sequences')
+    .select('id')
+    .eq('id', id)
+    .eq('tenant_id', auth.tenant_id)
+    .single();
+
+  if (!sequence) return notFound('Sequence');
+
+  const updates = {};
+  if (body.step_order !== undefined) updates.step_order = body.step_order;
+  if (body.delay_days !== undefined) updates.delay_days = body.delay_days;
+  if (body.step_type !== undefined) updates.step_type = body.step_type;
+  if (body.subject !== undefined) updates.subject = body.subject;
+  if (body.body_template !== undefined) updates.body_template = body.body_template;
+  if (body.channel !== undefined) updates.channel = body.channel;
+  if (body.variant_key !== undefined) updates.variant_key = body.variant_key;
+
+  if (Object.keys(updates).length === 0) return badRequest('No valid fields to update');
+
+  const { data, error } = await supabase
+    .from('sequence_steps')
+    .update(updates)
+    .eq('id', body.step_id)
+    .eq('sequence_id', id)
+    .select()
+    .single();
+
+  if (error || !data) return notFound('Step');
+
+  return NextResponse.json({ data });
+}

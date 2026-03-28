@@ -2,10 +2,10 @@ import { verifyDashboardAuth, unauthorizedResponse } from "../../../../../../lib
 import { proxyGet } from "../../../../../../lib/proxy";
 
 export async function GET(request, { params }) {
-  const { authorized } = await verifyDashboardAuth();
+  const { authorized, api_key } = await verifyDashboardAuth();
   if (!authorized) return unauthorizedResponse();
 
   const { id } = await params;
-  const data = await proxyGet(`/sequences/${id}/stats`);
+  const data = await proxyGet(`/sequences/${id}/stats`, null, api_key);
   return Response.json(data);
 }

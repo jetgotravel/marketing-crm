@@ -56,7 +56,7 @@ export default function CompanyDetailPage() {
     try {
       const [companyRes, contactsRes] = await Promise.all([
         apiGet(`/companies/${id}`),
-        apiGet("/contacts", { company_id: id, limit: "100" }),
+        apiGet(`/companies/${id}/contacts`, { limit: "100" }),
       ]);
       setCompany(companyRes.data || companyRes);
       setContacts(contactsRes.data || []);
@@ -130,16 +130,12 @@ export default function CompanyDetailPage() {
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           <Field label="Name" value={company.name} />
           <Field label="Domain" value={company.domain} />
+          <Field label="Primary Email" value={company.primary_email} />
           <Field label="Industry" value={company.industry} />
-          <Field
-            label="Employees"
-            value={
-              company.employee_count != null
-                ? formatNumber(company.employee_count)
-                : null
-            }
-          />
+          <Field label="Size" value={company.size_range} />
           <Field label="Location" value={company.location} />
+          <Field label="Website" value={company.website} />
+          <Field label="LinkedIn" value={company.linkedin_url} />
           <Field label="Description" value={company.description} />
           <Field label="Created" value={formatDate(company.created_at)} />
         </dl>

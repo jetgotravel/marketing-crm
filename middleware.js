@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
-import { verifySessionToken } from "./lib/verify-token.js";
+import { createSupabaseMiddleware } from "./lib/supabase-middleware.js";
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Skip auth check for these paths
+  // Skip auth for these paths
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/v1/") ||
@@ -12,16 +11,22 @@ export function middleware(request) {
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico"
   ) {
-    return NextResponse.next();
+    return;
   }
 
-  const session = request.cookies.get("crm_dash_session");
+  const { supabase, response } = createSupabaseMiddleware(request);
 
-  if (!session || !verifySessionToken(session.value)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return Response.redirect(url);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

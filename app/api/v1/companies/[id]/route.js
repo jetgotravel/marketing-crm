@@ -37,7 +37,7 @@ export async function PATCH(req, { params }) {
 
   if (body.tags && !Array.isArray(body.tags)) return badRequest('tags must be an array');
 
-  const allowed = ['name', 'domain', 'industry', 'size_range', 'location', 'website', 'description', 'linkedin_url', 'tags', 'custom_fields'];
+  const allowed = ['name', 'domain', 'primary_email', 'industry', 'size_range', 'location', 'website', 'description', 'linkedin_url', 'tags', 'custom_fields'];
   const updates = {};
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key];

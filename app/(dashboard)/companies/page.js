@@ -34,16 +34,24 @@ const COLUMNS = [
     render: (row) => row.industry || "—",
   },
   {
-    key: "employee_count",
-    label: "Employees",
-    render: (row) =>
-      row.employee_count != null ? formatNumber(row.employee_count) : "—",
+    key: "size_range",
+    label: "Size",
+    render: (row) => row.size_range || "—",
   },
   {
     key: "contact_count",
     label: "Contacts",
-    render: (row) =>
-      row.contact_count != null ? formatNumber(row.contact_count) : "—",
+    render: (row) => {
+      const count = row.contact_count ?? 0;
+      return count > 0 ? (
+        <span className="font-medium text-slate-900">{formatNumber(count)}</span>
+      ) : "—";
+    },
+  },
+  {
+    key: "location",
+    label: "Location",
+    render: (row) => row.location || "—",
   },
 ];
 
@@ -62,20 +70,17 @@ export default function CompaniesPage() {
     try {
       let res;
       if (search.trim()) {
-        res = await apiGet("/search", {
-          q: search.trim(),
-          types: "companies",
-          page: String(page),
-          limit: String(PAGE_SIZE),
-        });
+        res = await apiGet("/search", { q: search.trim() });
+        setCompanies(res.data?.companies || []);
+        setPagination(null);
       } else {
         res = await apiGet("/companies", {
           page: String(page),
           limit: String(PAGE_SIZE),
         });
+        setCompanies(res.data || []);
+        setPagination(res.pagination || null);
       }
-      setCompanies(res.data || []);
-      setPagination(res.pagination || null);
     } catch (e) {
       setError(e.message);
     } finally {

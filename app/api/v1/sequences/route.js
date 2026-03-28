@@ -15,7 +15,7 @@ export async function GET(req) {
 
   let query = supabase
     .from('sequences')
-    .select('*', { count: 'exact' })
+    .select('*, sequence_steps(count), sequence_enrollments(count)', { count: 'exact' })
     .eq('tenant_id', auth.tenant_id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -26,8 +26,17 @@ export async function GET(req) {
 
   if (error) return dbError(error);
 
+  // Flatten counts
+  const enriched = (data || []).map(seq => ({
+    ...seq,
+    step_count: seq.sequence_steps?.[0]?.count || 0,
+    enrolled_count: seq.sequence_enrollments?.[0]?.count || 0,
+    sequence_steps: undefined,
+    sequence_enrollments: undefined,
+  }));
+
   return NextResponse.json({
-    data,
+    data: enriched,
     pagination: { page, limit, total: count, total_pages: Math.ceil(count / limit) },
   });
 }
@@ -45,13 +54,20 @@ export async function POST(req) {
 
   if (!body.name) return badRequest('name is required');
 
+  const insert = {
+    tenant_id: auth.tenant_id,
+    name: body.name,
+    status: 'draft',
+  };
+  if (body.send_window_start !== undefined) insert.send_window_start = body.send_window_start;
+  if (body.send_window_end !== undefined) insert.send_window_end = body.send_window_end;
+  if (body.skip_weekends !== undefined) insert.skip_weekends = body.skip_weekends;
+  if (body.daily_send_limit !== undefined) insert.daily_send_limit = body.daily_send_limit;
+  if (body.cooldown_days !== undefined) insert.cooldown_days = body.cooldown_days;
+
   const { data, error } = await supabase
     .from('sequences')
-    .insert({
-      tenant_id: auth.tenant_id,
-      name: body.name,
-      status: 'draft',
-    })
+    .insert(insert)
     .select()
     .single();
 

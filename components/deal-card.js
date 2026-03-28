@@ -28,7 +28,7 @@ export default function DealCard({ deal }) {
       }`}
     >
       <p className="text-sm font-medium text-slate-900 truncate">
-        {deal.name}
+        {deal.deal_name}
       </p>
       {deal.value != null && (
         <p className="text-sm text-slate-600 mt-1">

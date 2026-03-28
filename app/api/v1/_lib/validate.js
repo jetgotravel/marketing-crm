@@ -40,7 +40,7 @@ export function validateArray(arr, maxLen = 500) {
 }
 
 const CONTACT_SOURCES = ['scraped', 'manual', 'imported', 'enriched'];
-const CONTACT_STATUSES = ['new', 'contacted', 'replied', 'qualified', 'converted', 'lost'];
+const CONTACT_STATUSES = ['new', 'contacted', 'replied', 'qualified', 'converted', 'lost', 'bounced'];
 const DEAL_STAGES = ['lead', 'qualified', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
 const TEMPLATE_CATEGORIES = ['cold_outreach', 'follow_up', 'intro', 'breakup', 'referral'];
 

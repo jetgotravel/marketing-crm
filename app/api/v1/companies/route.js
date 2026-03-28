@@ -31,8 +31,29 @@ export async function GET(req) {
 
   if (error) return dbError(error);
 
+  // Get contact counts per company
+  const companyIds = (data || []).map(c => c.id);
+  let contactCounts = {};
+  if (companyIds.length > 0) {
+    const { data: counts } = await supabase
+      .from('contacts')
+      .select('company_id')
+      .eq('tenant_id', auth.tenant_id)
+      .in('company_id', companyIds);
+    if (counts) {
+      for (const row of counts) {
+        contactCounts[row.company_id] = (contactCounts[row.company_id] || 0) + 1;
+      }
+    }
+  }
+
+  const enriched = (data || []).map(company => ({
+    ...company,
+    contact_count: contactCounts[company.id] || 0,
+  }));
+
   return NextResponse.json({
-    data,
+    data: enriched,
     pagination: {
       page,
       limit,
@@ -64,6 +85,7 @@ export async function POST(req) {
       tenant_id: auth.tenant_id,
       name: clampString(body.name, 255),
       domain: clampString(body.domain, 255) || null,
+      primary_email: body.primary_email ? body.primary_email.toLowerCase().trim() : null,
       industry: clampString(body.industry, 100) || null,
       size_range: clampString(body.size_range, 50) || null,
       location: clampString(body.location, 255) || null,

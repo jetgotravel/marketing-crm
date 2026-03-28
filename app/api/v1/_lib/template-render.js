@@ -14,17 +14,29 @@ function escapeHtml(str) {
 
 /**
  * Render a template string with contact/custom data.
- * Supports: {{first_name}}, {{last_name}}, {{company}}, {{title}}, {{email}}, {{custom.field_name}}
+ * Supports:
+ *   {{first_name}} — simple interpolation
+ *   {{first_name|default:"there"}} — with fallback if empty/missing
+ *   {{custom.field_name}} — custom fields
  * All interpolated values are HTML-escaped to prevent injection.
  */
 export function renderTemplate(template, contact) {
   if (!template) return '';
 
-  return template.replace(/\{\{(\w+(?:\.\w+)?)\}\}/g, (match, key) => {
+  return template.replace(/\{\{(\w+(?:\.\w+)?)(?:\|default:"([^"]*)")?\}\}/g, (match, key, defaultValue) => {
+    let value;
     if (key.startsWith('custom.')) {
       const field = key.slice(7);
-      return escapeHtml(contact.custom_fields?.[field] ?? '');
+      value = contact.custom_fields?.[field];
+    } else {
+      value = contact[key];
     }
-    return escapeHtml(contact[key] ?? '');
+
+    // Use default if value is null, undefined, or empty string
+    if (value === null || value === undefined || value === '') {
+      value = defaultValue ?? '';
+    }
+
+    return escapeHtml(value);
   });
 }
